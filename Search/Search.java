@@ -1,10 +1,18 @@
+// After writing my solution, I was interested to see how it could be approached differently. I consulted
+// the posted solution by a programming team coach and compared. I liked their idea of storing the locations
+// of each letter in the puzzle because it offers an improvement on runtime. We can traverse the entire puzzle
+// only once instead of w times, where w is the number of words to be found. Thus, the runtime becomes O(r*c)
+// r is the number of rows and c is the number of columns, instead of O(r*c*w). Both these runtimes are linear,
+// but hey, an improvement is an improvement. Depending on time and space constraints, this technique could prove
+// useful in future situations.
+
 import java.io.*;
 import java.util.*;
 
 public class Search
 {
 	char [][] puzzle;
-	ArrayList<Word> solutions;
+	Map<Character, ArrayList<Location>> locationsOfChar;
 	
 	public Search(String filename)
 	{
@@ -14,8 +22,6 @@ public class Search
 			
 			for (int a = 1; a <= numPuzzles; a++)
 			{
-				solutions = new ArrayList<Word>();
-				
 				int rows = in.nextInt();
 				int cols = in.nextInt();
 				in.nextLine();		// consume '\n'
@@ -24,6 +30,9 @@ public class Search
 				puzzle = new char[rows][];
 				for (int i = 0; i < rows; i++)
 					puzzle[i] = in.nextLine().trim().toCharArray();
+				
+				// populate our map so we know where to look for each word
+				storeCharacterLocations();
 
 				// print heading
 				System.out.println("Word search puzzle #" + a + ":");
@@ -44,50 +53,60 @@ public class Search
 		}
 	}
 	
-	public void searchFor(String word)
+	public void storeCharacterLocations()
 	{
-		int index = 0;
-		char firstChar = word.charAt(0);
+		locationsOfChar = new HashMap<Character, ArrayList<Location>>();
 		
 		for (int i = 0; i < puzzle.length; i++)
 		{
 			for (int j = 0; j < puzzle[i].length; j++)
 			{
-				if (puzzle[i][j] == firstChar)
-				{
-					// check adjacent locations
-					if (checkToTheRight(i, j, word, index))
-					{
-						System.out.println(new Word(word, i+1, j+1, 'R'));
-						return;
-					}
-					
-					if (checkToTheLeft(i, j, word, index))
-					{
-						System.out.println(new Word(word, i+1, j+1, 'L'));
-						return;
-					}
-					
-					if (checkDown(i, j, word, index))
-					{
-						System.out.println(new Word(word, i+1, j+1, 'D'));
-						return;
-					}
-					
-					if (checkUp(i, j, word, index))
-					{
-						System.out.println(new Word(word, i+1, j+1, 'U'));
-						return;
-					}
-				}
+				char c = puzzle[i][j];
+				
+				if (!locationsOfChar.containsKey(c))
+					locationsOfChar.put(c, new ArrayList<Location>());
+				
+				locationsOfChar.get(c).add(new Location(i, j));
 			}
 		}
 	}
 	
-	public boolean checkToTheRight(int row, int col, String word, int index)
+	public void searchFor(String word)
+	{
+		char firstChar = word.charAt(0);
+		
+		for (Location l : locationsOfChar.get(firstChar))
+		{
+			if (checkToTheRight(l.row, l.col, word))
+			{
+				System.out.println(new Word(word, l.row+1, l.col+1, 'R'));
+				return;
+			}
+			
+			if (checkToTheLeft(l.row, l.col, word))
+			{
+				System.out.println(new Word(word, l.row+1, l.col+1, 'L'));
+				return;
+			}
+			
+			if (checkDown(l.row, l.col, word))
+			{
+				System.out.println(new Word(word, l.row+1, l.col+1, 'D'));
+				return;
+			}
+			
+			if (checkUp(l.row, l.col, word))
+			{
+				System.out.println(new Word(word, l.row+1, l.col+1, 'U'));
+				return;
+			}
+		}
+	}
+
+	public boolean checkToTheRight(int row, int col, String word)
 	{
 		col++;		// start at the next spot to the right
-		index++;	// advance to next character of word
+		int index = 1;	// advance to second character of word
 		
 		while (col < puzzle[0].length && index < word.length())
 		{
@@ -107,10 +126,10 @@ public class Search
 		return false;
 	}
 	
-	public boolean checkToTheLeft(int row, int col, String word, int index)
+	public boolean checkToTheLeft(int row, int col, String word)
 	{
 		col--;		// start at the next spot to the left
-		index++;	// advance to next character of word
+		int index = 1;	// advance to second character of word
 		
 		while (col >= -1 && index < word.length())
 		{
@@ -130,10 +149,10 @@ public class Search
 		return false;
 	}
 	
-	public boolean checkUp(int row, int col, String word, int index)
+	public boolean checkUp(int row, int col, String word)
 	{
 		row--;		// start at the next spot down
-		index++;	// advance to next character of word
+		int index = 1;	// advance to second character of word
 		
 		while (row >= -1 && index < word.length())
 		{
@@ -153,10 +172,10 @@ public class Search
 		return false;
 	}
 	
-	public boolean checkDown(int row, int col, String word, int index)
+	public boolean checkDown(int row, int col, String word)
 	{
 		row++;		// start at the next spot above
-		index++;	// advance to next character of word
+		int index = 1;	// advance to second character of word
 		
 		while (row <= puzzle.length && index < word.length())
 		{
@@ -213,5 +232,17 @@ class Word
 	public String toString()
 	{
 		return direction + " " + row + " " + col + " " + word;
+	}
+}
+
+class Location
+{
+	int row;
+	int col;
+	
+	Location(int r, int c)
+	{
+		row = r;
+		col = c;
 	}
 }
